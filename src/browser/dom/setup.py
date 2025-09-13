@@ -1,7 +1,11 @@
+import logging
 from playwright.async_api import Page
+import json
 import random
 from .constants import PLUGINS, VIEWPORTS
 from .dataclasses import PageConfigOptions
+
+logger = logging.getLogger(__name__)
 
 class PageSetup:
 
@@ -9,9 +13,8 @@ class PageSetup:
         self.config = config or self._build_config_options()
         self.page = page
 
-
     def _build_config_options(self) -> PageConfigOptions:
-        
+        logger.debug("No PageConfigOptions passed in, creating config options...")
         return PageConfigOptions(
             viewport = random.choice(VIEWPORTS)
         )
@@ -24,23 +27,21 @@ class PageSetup:
         await self._set_languages()
         await self._set_platform()       
 
-
     async def _set_platform(self):
-        await self.page.add_init_script("""
-            Object.defineProperty(navigator, 'platform', {
-               get: () => 'Win32'                      
-            });
+        await self.page.add_init_script(f"""
+            Object.defineProperty(navigator, 'platform', {{
+               get: () => {json.dumps(self.config.platform)}                      
+            }});
         """)
-
 
     async def _set_window_history_length(self):
-        """Sets the window.history.length property to something greater than 1"""
-        await self.page.add_init_script("""
-            Object.defineProperty(window.history, 'length', {
-                get: () => Math.floor(Math.random() * 10) + 3
-            });
+        """Sets the window.history.length property to a fixed value from config"""
+        await self.page.add_init_script(f"""
+            Object.defineProperty(window.history, 'length', {{
+                get: () => {json.dumps(self.config.window_history)},
+                configurable: true
+            }});
         """)
-
 
     async def _get_plugins(self) -> str:
         """Returns a serialized string of the browser's actual plugin values.
@@ -59,7 +60,6 @@ class PageSetup:
                 }]
             )));
         """)
-
         return plugins_json
 
 
@@ -78,15 +78,14 @@ class PageSetup:
         await self.page.set_viewport_size({"width": self.config.viewport[0], "height": self.config.viewport[1]})
         return
 
-
     async def _set_languages(self):
         """Sets the navigator.language and navigator.languages values"""
         await self.page.add_init_script(f"""
             Object.defineProperty(navigator, 'languages', {{
-               get: () => {self.config.languages}                         
+               get: () => {json.dumps(self.config.languages)}                         
             }});
             Object.defineProperty(navigator, 'language', {{
-               get: () => {self.config.language}                         
+               get: () => {json.dumps(self.config.language)}                         
             }});
         """)
 
@@ -94,6 +93,6 @@ class PageSetup:
         """Sets the 'navigator.webdriver' property"""
         await self.page.add_init_script(f"""
             Object.defineProperty(navigator, 'webdriver', {{
-                get: () => {self.config.webdriver} 
+                get: () => {json.dumps(self.config.webdriver)} 
             }});
         """)

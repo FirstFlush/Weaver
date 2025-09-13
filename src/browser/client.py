@@ -1,11 +1,12 @@
 import logging
 from typing import List
 from playwright.async_api import async_playwright, Playwright, Browser, BrowserContext
-
 from .dataclasses import BrowserConfig, ContextConfig
 from .exc import BrowserClientError
 
+
 logger = logging.getLogger(__name__)
+
 
 class BrowserClient:
     """Async browser client using Playwright."""
@@ -15,7 +16,6 @@ class BrowserClient:
         self.browser = browser
         self._open_contexts: List[BrowserContext] = []
 
-    
     @classmethod
     async def create(cls, config: BrowserConfig | None = None) -> "BrowserClient":
         """Factory method to create BrowserClient with initialized playwright and browser."""
