@@ -1,8 +1,10 @@
 import logging
 from typing import List
-from playwright.async_api import async_playwright, Playwright, Browser, BrowserContext
-from .dataclasses import BrowserConfig, ContextConfig
+from playwright.async_api import async_playwright, Playwright, Browser, BrowserContext, Page
+import ua_generator
+from .dataclasses import BrowserConfig, ContextConfig, OverrideConfig
 from .exc import BrowserClientError
+from .override import BrowserOverrides
 
 
 logger = logging.getLogger(__name__)
@@ -27,33 +29,6 @@ class BrowserClient:
         
         return cls(playwright, browser)
     
-    @staticmethod
-    async def _start_playwright() -> Playwright:
-        """Start Playwright."""
-        try:
-            logger = logging.getLogger(__name__)
-            logger.debug("Starting Playwright")
-            return await async_playwright().start()
-        except Exception as e:
-            raise BrowserClientError(f"Failed to start Playwright: {e}")
-    
-    @staticmethod
-    async def _start_browser(playwright: Playwright, config: BrowserConfig) -> Browser:
-        """Start browser."""
-        try:
-            logger = logging.getLogger(__name__)
-            browser_launcher = getattr(playwright, config.browser_type)
-            
-            launch_options = {
-                'headless': config.headless,
-                **config.launch_options
-            }
-            
-            logger.debug(f"Launching {config.browser_type} browser")
-            return await browser_launcher.launch(**launch_options)
-        except Exception as e:
-            raise BrowserClientError(f"Failed to start browser: {e}")
-    
     async def close(self) -> None:
         """Close all contexts, browser, and Playwright."""
         try:
@@ -70,22 +45,18 @@ class BrowserClient:
             
         except Exception as e:
             logger.error(f"Error during browser cleanup: {e}")
-    
+
     async def new_context(self, config: ContextConfig | None = None) -> BrowserContext:
         """Create a new browser context and track it."""
         if config is None:
-            config = ContextConfig()
+            config = ContextConfig(user_agent=self._create_ua())
         
-        context_options = {
-            **config.context_options
-        }
+        context_options = {}
         
         if config.viewport:
             context_options['viewport'] = config.viewport
         if config.user_agent:
             context_options['user_agent'] = config.user_agent
-        if config.extra_http_headers:
-            context_options['extra_http_headers'] = config.extra_http_headers
         if config.ignore_https_errors:
             context_options['ignore_https_errors'] = config.ignore_https_errors
         if not config.java_script_enabled:
@@ -96,3 +67,44 @@ class BrowserClient:
         self._open_contexts.append(context)
         
         return context
+
+    async def new_page(self, context: BrowserContext, config: OverrideConfig | None = None) -> Page:
+        """
+        Thin wrapper around BrowserContext.new_page() function
+        automatically injects browser override scripts via BrowserOverrides before returning the page.    
+        """
+        page = await context.new_page()
+        overrides = BrowserOverrides(page=page, config=config)
+        await overrides.inject_overrides()
+        return page
+
+    @staticmethod
+    async def _start_playwright() -> Playwright:
+        """Start Playwright."""
+        try:
+            logger = logging.getLogger(__name__)
+            logger.debug("Starting Playwright")
+            return await async_playwright().start()
+        except Exception as e:
+            raise BrowserClientError(f"Failed to start Playwright: {e}")
+
+    @staticmethod
+    async def _start_browser(playwright: Playwright, config: BrowserConfig) -> Browser:
+        """Start browser."""
+        try:
+            logger = logging.getLogger(__name__)
+            browser_launcher = getattr(playwright, config.browser_type)
+            
+            launch_options = {
+                'headless': config.headless,
+                **config.launch_options
+            }
+            
+            logger.debug(f"Launching {config.browser_type} browser")
+            return await browser_launcher.launch(**launch_options)
+        except Exception as e:
+            raise BrowserClientError(f"Failed to start browser: {e}")
+        
+
+    def _create_ua(self) -> str:
+        return ua_generator.generate().text

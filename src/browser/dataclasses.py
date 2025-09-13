@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
+import random
 from typing import Any, Dict, Optional
+from .constants import VIEWPORTS
 
 
 @dataclass
@@ -12,19 +14,19 @@ class BrowserConfig:
 
 @dataclass 
 class ContextConfig:
-    """Configuration for browser context."""
-    # viewport: Optional[Dict[str, int]] = None
-    # user_agent: Optional[str] = None
-    # extra_http_headers: Optional[Dict[str, str]] = None
-
-    viewport: tuple[int, int] # width, height
+    """Configuration for browser context creation."""
     user_agent: str
+    viewport: tuple[int, int] = field(default_factory=lambda: random.choice(VIEWPORTS)) # width, height
+    ignore_https_errors: bool = False
+    java_script_enabled: bool = True
+
+
+@dataclass 
+class OverrideConfig:
+    """Configuration for overriding Browser APIs"""
     window_history: int = field(default=10)
     languages: list[str] = field(default=[ "en-US", "en" ])
     language: str = field(default="en-US")
     platform: str = field(default="Win32")
     webdriver: bool = False
-    ignore_https_errors: bool = False
-    java_script_enabled: bool = True
-    context_options: Dict[str, Any] = field(default_factory=dict)
-    extra_http_headers: Optional[Dict[str, str]] = None
+
