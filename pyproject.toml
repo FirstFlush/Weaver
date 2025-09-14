@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "weaver"
+version = "0.1.0"
+description = "Unified web scraping framework with HTTP and browser automation clients."
+dependencies = [
+    "aiohappyeyeballs==2.6.1",
+    "aiohttp==3.12.15",
+    "aiosignal==1.4.0",
+    "async-timeout==5.0.1",
+    "attrs==25.3.0",
+    "Brotli==1.1.0",
+    "frozenlist==1.7.0",
+    "greenlet==3.2.4",
+    "idna==3.10",
+    "multidict==6.6.4",
+    "playwright==1.55.0",
+    "propcache==0.3.2",
+    "pyee==13.0.0",
+    "typing_extensions==4.15.0",
+    "ua-generator==2.0.12",
+    "yarl==1.20.1"
+]
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name="Michael Pearce", email="firstflush@protonmail.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Framework :: AsyncIO",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries",
+]
+keywords = ["web scraping", "async", "playwright", "aiohttp", "ETL", "spider"]
+
+[project.urls]
+Homepage = "https://github.com/FirstFlush/weaver"
+Repository = "https://github.com/FirstFlush/weaver"
+Documentation = "https://github.com/FirstFlush/weaver#readme"
+
+[tool.setuptools.packages.find]
+where = ["src"]
