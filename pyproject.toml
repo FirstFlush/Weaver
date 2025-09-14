@@ -46,4 +46,5 @@ Repository = "https://github.com/FirstFlush/weaver"
 Documentation = "https://github.com/FirstFlush/weaver#readme"
 
 [tool.setuptools.packages.find]
-where = ["weaver"]
+where = ["."]
+include = ["weaver*"]
