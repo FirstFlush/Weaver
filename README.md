@@ -36,7 +36,14 @@ with BlogSpider(browser_config=browser_config) as spider:
 ## Installation
 
 ```bash
+# Install the package
 pip install weaver  # Coming soon
+
+# Install browser binaries (required for browser automation)
+playwright install
+
+# Or install only Chromium to save space (~100MB vs ~300MB)
+playwright install chromium
 ```
 
 ## Basic Usage
