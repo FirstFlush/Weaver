@@ -6,7 +6,7 @@ from .dataclasses import OverrideConfig
 
 logger = logging.getLogger(__name__)
 
-class BrowserOverrides:
+class BrowserOverrideService:
     """
     Provides a centralized utility to inject JavaScript overrides into a browser
     context or page, modifying browser internals to spoof environment properties 

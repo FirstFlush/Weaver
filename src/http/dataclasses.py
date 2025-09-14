@@ -1,5 +1,16 @@
+import aiohttp
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
+
+
+@dataclass
+class HttpConfig:
+    headers: Optional[Dict[str, str]] = None
+    cookies: Optional[Dict[str, str]] = None
+    timeout: Optional[aiohttp.ClientTimeout] = None
+    connector: Optional[aiohttp.BaseConnector] = None
+    trust_env: bool = True
+
 
 @dataclass
 class RequestConfig:

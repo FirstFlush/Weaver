@@ -29,7 +29,7 @@ LOGGING = {
         "file": {
             "level": "WARNING",
             "class": "logging.FileHandler",
-            "filename": "log.error.log",
+            "filename": "logs/error.log",
             "formatter": "file",
         },
     },

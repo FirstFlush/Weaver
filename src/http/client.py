@@ -1,35 +1,28 @@
 import asyncio
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 import aiohttp
 from aiohttp import ClientError
-from .dataclasses import RequestConfig
+from .dataclasses import RequestConfig, HttpConfig
+from .exc import HttpClientError
 
 
 logger = logging.getLogger(__name__)
 
 
-class HttpClientError(Exception):
-    """Custom exception for API client errors."""
-    
-    def __init__(self, message: str, status_code: Optional[int] = None, response_text: Optional[str] = None):
-        super().__init__(message)
-        self.status_code = status_code
-        self.response_text = response_text
-
-
 class HttpClient:
     """Async HTTP client with persistent session for API requests."""
     
-    def __init__(self):
+    def __init__(self, config: HttpConfig):
+        self.config = config
         self.session = aiohttp.ClientSession()
     
     async def close(self):
         """Close the HTTP session."""
-        if not self.session.closed:
+        if self.session is not None and not self.session.closed:
             await self.session.close()
     
-    async def request(self, config: RequestConfig) -> Dict[str, Any]:
+    async def request(self, config: RequestConfig) -> dict[str, Any]:
         """Make HTTP request using RequestConfig."""
         request_kwargs = {
             'headers': config.headers,
