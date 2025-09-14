@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from typing import Any
 import aiohttp
+from aiohttp import ClientResponse
 from aiohttp import ClientError
 from .dataclasses import RequestConfig, HttpConfig
 from .exc import HttpClientError
@@ -16,18 +16,18 @@ class HttpClient:
     def __init__(self, config: HttpConfig):
         self.config = config
         self.session = aiohttp.ClientSession()
-    
+            
     async def close(self):
         """Close the HTTP session."""
         if self.session is not None and not self.session.closed:
             await self.session.close()
     
-    async def request(self, config: RequestConfig) -> dict[str, Any]:
+    async def request(self, config: RequestConfig) -> ClientResponse:
         """Make HTTP request using RequestConfig."""
+        headers = config.headers if config.headers is not None else self.config.headers
         request_kwargs = {
-            'headers': config.headers,
+            'headers': headers,
             'params': config.params,
-            **config.kwargs
         }
         
         if config.json_data:
@@ -42,16 +42,8 @@ class HttpClient:
                 logger.debug(f"Making {config.method} request to {config.url} (attempt {attempt + 1})")
                 
                 async with self.session.request(config.method, config.url, **request_kwargs) as response:
-                    response_text = await response.text()
-                    
-                    response_data = {
-                        'status': response.status,
-                        'headers': dict(response.headers),
-                        'text': response_text,
-                        'url': str(response.url)
-                    }
-                    
                     if response.status >= 400:
+                        response_text = await response.text()
                         error_msg = f"HTTP {response.status} error for {config.method} {config.url}"
                         logger.error(f"{error_msg}: {response_text}")
                         raise HttpClientError(
@@ -59,9 +51,8 @@ class HttpClient:
                             status_code=response.status,
                             response_text=response_text
                         )
-                    
                     logger.debug(f"Request successful: {config.method} {config.url} -> {response.status}")
-                    return response_data
+                    return response
                     
             except (ClientError, asyncio.TimeoutError) as e:
                 error_msg = f"Network error on {config.method} {config.url}: {str(e)}"
