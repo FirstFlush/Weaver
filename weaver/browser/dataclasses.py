@@ -25,7 +25,7 @@ class ContextConfig:
 class OverrideConfig:
     """Configuration for overriding Browser APIs"""
     window_history: int = field(default=10)
-    languages: list[str] = field(default=[ "en-US", "en" ])
+    languages: list[str] = field(default_factory=lambda: [ "en-US", "en" ])
     language: str = field(default="en-US")
     platform: str = field(default="Win32")
     webdriver: bool = False
