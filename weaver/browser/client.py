@@ -65,9 +65,9 @@ class BrowserClient:
 
         context_options = {}
 
-        if config.viewport:
-            context_options['viewport'] = config.viewport
-        if config.user_agent:
+        if config.viewport is not None:
+            context_options['viewport'] = {"width": config.viewport[0], "height": config.viewport[1]}
+        if config.user_agent is not None:
             context_options['user_agent'] = config.user_agent
         if config.ignore_https_errors:
             context_options['ignore_https_errors'] = config.ignore_https_errors
