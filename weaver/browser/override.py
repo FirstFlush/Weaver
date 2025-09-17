@@ -2,7 +2,7 @@ import logging
 from playwright.async_api import Page
 import json
 import random
-from .dataclasses import OverrideConfig
+from .dataclasses import BrowserOverrideConfig
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +14,9 @@ class BrowserOverrideService:
     mimicking non-automation behavior, and other browser API tweaks to reduce 
     detection by scripts or anti-bot measures.
     """
-    def __init__(self, page: Page, config: OverrideConfig | None = None):
+    def __init__(self, page: Page, config: BrowserOverrideConfig | None = None):
         self.page = page
-        self.config = config if isinstance(config, OverrideConfig) else OverrideConfig()
+        self.config = config if isinstance(config, BrowserOverrideConfig) else BrowserOverrideConfig()
 
     async def inject_overrides(self):
         """Set various config settings for a new SpiderPage object."""
