@@ -6,7 +6,7 @@ from .browser.dataclasses import BrowserConfig
 from .browser.exc import BrowserClientError
 
 from .http.client import HttpClient
-from .http.dataclasses import HttpConfig
+from .http.dataclasses import HttpConfig, RequestConfig
 from .http.exc import HttpClientError
 
 __all__ = [
@@ -17,5 +17,6 @@ __all__ = [
     'BrowserClientError',
     'HttpClient',
     'HttpConfig', 
-    'HttpClientError'
+    'HttpClientError',
+    'RequestConfig',
 ]

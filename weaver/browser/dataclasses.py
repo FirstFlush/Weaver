@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import random
 from typing import Any, Dict, Optional
 from .constants import VIEWPORTS
+from ..proxy.dataclasses import BrowserProxyConfig
 
 
 @dataclass
@@ -10,6 +11,7 @@ class BrowserConfig:
     browser_type: str = 'chromium'  # chromium, firefox, webkit
     headless: bool = True
     launch_options: Dict[str, Any] = field(default_factory=dict)
+    proxy_config: Optional[BrowserProxyConfig] = None
 
 
 @dataclass 
@@ -19,10 +21,10 @@ class ContextConfig:
     viewport: tuple[int, int] = field(default_factory=lambda: random.choice(VIEWPORTS)) # width, height
     ignore_https_errors: bool = False
     java_script_enabled: bool = True
-
+    proxy_config: Optional[BrowserProxyConfig] = None
 
 @dataclass 
-class OverrideConfig:
+class BrowserOverrideConfig:
     """Configuration for overriding Browser APIs"""
     window_history: int = field(default=10)
     languages: list[str] = field(default_factory=lambda: [ "en-US", "en" ])
