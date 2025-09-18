@@ -5,9 +5,10 @@ A modern, async-first web scraping framework for Python that combines the speed 
 ## Why Weaver?
 
 - **Unified Interface**: One framework, two scraping modes - use HTTP requests for speed or browser automation for JavaScript-heavy sites
-- **Fully Async**: Built from the ground up with asyncio for maximum performance
+- **Fully Async**: Native asyncio support across HTTP requests and browser automation for maximum concurrency
 - **Anti-Detection**: Stealth capabilities to help you blend in
 - **Flexible**: Mix and match HTTP and browser scraping within the same spider
+- **Proxy Integration**: Built-in support for static and rotating proxy configurations
 
 ## Quick Start
 
