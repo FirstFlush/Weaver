@@ -1,6 +1,5 @@
 import ua_generator
 
-
 def create_ua() -> str:
     return ua_generator.generate().text
 
@@ -21,3 +20,16 @@ def generate_default_headers() -> dict[str, str]:
         'sec-ch-ua-mobile': '?0',
         'sec-ch-ua-platform': '"macOS"'
     }
+    
+def get_impersonation_profile(user_agent: str) -> str:
+    # TODO check if this is better here or in http client
+    ua_lower = user_agent.lower()
+    
+    if 'chrome' in ua_lower:
+        return "chrome110"
+    elif 'firefox' in ua_lower:
+        return "firefox109"
+    elif 'safari' in ua_lower:
+        return "safari15_5"
+    else:
+        return "chrome110"

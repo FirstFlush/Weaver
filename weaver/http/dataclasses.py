@@ -1,7 +1,8 @@
 import aiohttp
 from dataclasses import dataclass, field
-from ..common.utils import generate_default_headers
 from typing import Optional, Dict, Any
+from ..common.utils import generate_default_headers
+from ..proxy.dataclasses import ProxyConfig
 
 
 @dataclass
@@ -11,7 +12,7 @@ class HttpConfig:
     timeout: Optional[aiohttp.ClientTimeout] = None
     connector: Optional[aiohttp.BaseConnector] = None
     trust_env: bool = True
-
+    proxy_config: Optional[ProxyConfig] = None
 
 @dataclass
 class RequestConfig:
@@ -25,3 +26,4 @@ class RequestConfig:
     timeout: Optional[float] = None
     max_retries: int = 3
     retry_delay: float = 1.0
+    proxy_config: Optional[ProxyConfig] = None  # Per-request ProxyConfig will override HttpConfig ProxyConfig

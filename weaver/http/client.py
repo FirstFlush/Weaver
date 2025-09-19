@@ -21,6 +21,12 @@ class HttpClient:
         try:
             text = await response.text()
             return response.status, text
+        except HttpClientError:
+            raise
+        except Exception as e:
+            msg = f"{self.__class__.__name__} can not complete request due to an unexpected error: {e}"
+            logger.error(msg, exc_info=True)
+            raise HttpClientError(msg) from e
         finally:
             response.close()
 
@@ -90,6 +96,7 @@ class HttpClient:
     
     async def _make_single_request(self, config: RequestConfig, request_kwargs: dict) -> ClientResponse:
         """Make a single HTTP request attempt."""
+        
         response = await self.session.request(config.method, config.url, **request_kwargs)
         
         if response.status >= 400:

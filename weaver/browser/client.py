@@ -22,14 +22,14 @@ class BrowserClient:
             browser: Browser,
             config: BrowserConfig,
             override_service_cls: Type[BrowserOverrideService] = BrowserOverrideService,
-            proxy_connection_handler: ProxyEndpointHandler | None = None,
+            proxy_endpoint_handler: ProxyEndpointHandler | None = None,
     ):
         self.playwright = playwright
         self.browser = browser
         self.config = config
         self._override_service_cls = override_service_cls
         self._open_contexts: List[BrowserContext] = []
-        self._proxy_handler = proxy_connection_handler
+        self._proxy_handler = proxy_endpoint_handler
 
 
     @classmethod
@@ -66,7 +66,6 @@ class BrowserClient:
     async def new_context(
             self, 
             config: ContextConfig | None = None, 
-            proxy_handler: ProxyEndpointHandler | None = None,
     ) -> BrowserContext:
         """Create a new browser context and track it."""
         if config is None:
@@ -78,10 +77,6 @@ class BrowserClient:
         context = await self.browser.new_context(**context_options)
         
         self._open_contexts.append(context)
-        if proxy_handler:
-            if self._proxy_handler:
-                logger.warning("Browser already has proxy handler - ignoring context-level handler")
-                proxy_handler = self._proxy_handler
 
         return context
 
