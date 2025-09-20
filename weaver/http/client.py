@@ -4,6 +4,7 @@ import aiohttp
 from aiohttp import ClientResponse, ClientError
 from .dataclasses import RequestConfig, HttpConfig
 from .exc import HttpClientError
+from ..proxy.manager import ProxyManager
 
 logger = logging.getLogger(__name__)
 
@@ -11,9 +12,10 @@ logger = logging.getLogger(__name__)
 class HttpClient:
     """Async HTTP client with persistent session for API requests."""
     
-    def __init__(self, config: HttpConfig):
-        self.config = config
-        self.session = aiohttp.ClientSession()
+    def __init__(self, config: HttpConfig, proxy_manager: ProxyManager | None = None):
+        self._config = config
+        self._proxy_manager = proxy_manager 
+        self._session = aiohttp.ClientSession()
 
     async def request(self, config: RequestConfig) -> tuple[int, str]:
         """Convenience method that returns (status, text) and handles cleanup."""
@@ -53,12 +55,12 @@ class HttpClient:
     
     async def close(self):
         """Close the HTTP session."""
-        if self.session is not None and not self.session.closed:
-            await self.session.close()
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
     
     def _build_request_kwargs(self, config: RequestConfig) -> dict:
         """Build request kwargs from config."""
-        headers = config.headers if config.headers is not None else self.config.headers
+        headers = config.headers if config.headers is not None else self._config.headers
         request_kwargs = {
             'headers': headers,
             'params': config.params,
@@ -97,7 +99,7 @@ class HttpClient:
     async def _make_single_request(self, config: RequestConfig, request_kwargs: dict) -> ClientResponse:
         """Make a single HTTP request attempt."""
         
-        response = await self.session.request(config.method, config.url, **request_kwargs)
+        response = await self._session.request(config.method, config.url, **request_kwargs)
         
         if response.status >= 400:
             await self._handle_error_response(response, config)

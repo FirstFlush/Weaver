@@ -8,6 +8,9 @@ from ..http.exc import HttpClientError
 from ..browser.client import BrowserClient
 from ..browser.dataclasses import BrowserConfig
 from ..browser.exc import BrowserClientError
+from ..proxy.dataclasses import ProxyPool
+from ..proxy.exc import ProxyError
+from ..proxy.manager import ProxyManager
 from .exc import BaseSpiderError
 
 logger = logging.getLogger(__name__)
@@ -19,6 +22,7 @@ class BaseSpider(ABC):
             self,
             browser_config: BrowserConfig | None = None,
             http_config: HttpConfig | None = None,
+            proxy_pool: ProxyPool | None = None,
     ):
         """
         Abstract base class for web scrapers providing unified access to
@@ -37,8 +41,12 @@ class BaseSpider(ABC):
         """
         self._browser_config = browser_config
         self._http_config = http_config
+        self._proxy_pool = proxy_pool
+        self._proxy_manager = self._create_proxy_manager() if self._proxy_pool else None
+
         self.browser_client: BrowserClient | None = None
         self.http_client: HttpClient | None = None
+        
         if not self._browser_config and not self._http_config:
             msg = f"{self.__class__.__name__} did not receive either BrowserConfig or HttpConfig. At least 1 is required."
             logger.error(msg)
@@ -88,5 +96,14 @@ class BaseSpider(ABC):
         """
         pass
 
-    async def jitter(self, low: float = 0.2, high: float = 0.5):
+    async def jitter(self, low: float = 0.2, high: float = 1.0):
         await asyncio.sleep(random.uniform(low, high))
+
+
+    def _create_proxy_manager(self) -> ProxyManager:
+        if not self._proxy_pool:
+            msg = f"{self.__class__.__name__} can not create ProxyManager. ProxyPool not found`{type(self._proxy_pool)}`"
+            logger.error(msg, exc_info=True)
+            raise ProxyError(msg)
+        
+        return ProxyManager(proxy_pool=self._proxy_pool)

@@ -1,4 +1,3 @@
-from dataclasses import asdict
 import logging
 from typing import Any, List, Type
 from playwright.async_api import async_playwright, Playwright, Browser, BrowserContext, Page, ProxySettings
@@ -6,7 +5,9 @@ from .dataclasses import BrowserConfig, ContextConfig, BrowserOverrideConfig
 from .exc import BrowserClientError
 from .override import BrowserOverrideService
 from ..common.utils import create_ua
-from ..proxy.endpoint_handler import ProxyEndpointHandler
+from ..proxy.manager import ProxyManager
+from ..proxy.dataclasses import ProxyPool
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,14 +23,14 @@ class BrowserClient:
             browser: Browser,
             config: BrowserConfig,
             override_service_cls: Type[BrowserOverrideService] = BrowserOverrideService,
-            proxy_endpoint_handler: ProxyEndpointHandler | None = None,
+            proxy_manager: ProxyManager | None = None,
     ):
         self.playwright = playwright
         self.browser = browser
-        self.config = config
+        self._config = config
         self._override_service_cls = override_service_cls
         self._open_contexts: List[BrowserContext] = []
-        self._proxy_handler = proxy_endpoint_handler
+        self._proxy_manager = proxy_manager
 
 
     @classmethod
@@ -43,7 +44,7 @@ class BrowserClient:
         
         return cls(playwright=playwright, browser=browser, config=config)
 
-    def _build_context_options(self, config: ContextConfig) -> dict[str, Any]:
+    def _build_context_options(self, config: ContextConfig, proxy_endpoint: str | None = None) -> dict[str, Any]:
         context_options = {}
         if config.viewport is not None:
             context_options['viewport'] = {"width": config.viewport[0], "height": config.viewport[1]}
@@ -53,15 +54,15 @@ class BrowserClient:
             context_options['ignore_https_errors'] = config.ignore_https_errors
         if not config.java_script_enabled:
             context_options['java_script_enabled'] = config.java_script_enabled
-        if config.proxy_config is not None:
-            logger.debug(f"Creating new context with proxy endpoint {config.proxy_config.server}")
-            context_options['proxy'] = {
-                "server": config.proxy_config.server,
-                "username": config.proxy_config.username,
-                "password": config.proxy_config.password,
-            }
+        if proxy_endpoint is not None:
+            if self._proxy_manager:
+                logger.debug(f"Creating new context with proxy endpoint {proxy_endpoint}")
+                context_options["proxy"] = self._proxy_manager.playwright_proxy_credentials(proxy_endpoint)
+            else:
+                raise RuntimeError(f"{self.__class__.__name__} can not create new browser context with proxy.. Proxy manager not found!")
             
         return context_options            
+
 
     async def new_context(
             self, 
@@ -121,7 +122,7 @@ class BrowserClient:
             raise BrowserClientError(f"Failed to start Playwright: {e}")
 
     @staticmethod
-    async def _start_browser(p: Playwright, config: BrowserConfig) -> Browser:
+    async def _start_browser(p: Playwright, config: BrowserConfig, proxy_manager: ProxyManager | None = None) -> Browser:
         try:
             logger = logging.getLogger(__name__)
             browser_launcher = getattr(p, config.browser_type)
@@ -129,12 +130,14 @@ class BrowserClient:
                 'headless': config.headless,
                 **config.launch_options
             }
-            if config.proxy_config is not None:
-                launch_options["proxy"] = asdict(config.proxy_config)
-                logger.debug(f"Launching browser with proxy endpoint {config.proxy_config.server}")      
-                      
+            if proxy_manager is not None:
+                endpoint = await proxy_manager.acquire_static()
+                launch_options["proxy"] = proxy_manager.playwright_proxy_credentials(endpoint)
+                logger.debug(f"Launching browser with proxy endpoint {endpoint}")      
+
             logger.debug(f"Launching {config.browser_type} browser")
             return await browser_launcher.launch(**launch_options)
         except Exception as e:
             raise BrowserClientError(f"Failed to start browser: {e}")
+
 

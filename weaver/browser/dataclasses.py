@@ -11,7 +11,7 @@ class BrowserConfig:
     browser_type: str = 'chromium'  # chromium, firefox, webkit
     headless: bool = True
     launch_options: Dict[str, Any] = field(default_factory=dict) # additional kwargs to be passed into playwright's Browser.launch()
-    proxy_config: Optional[ProxyConfig] = None
+    # proxy_config: Optional[ProxyConfig] = None
 
 
 @dataclass 
@@ -21,7 +21,7 @@ class ContextConfig:
     viewport: tuple[int, int] = field(default_factory=lambda: random.choice(VIEWPORTS)) # width, height
     ignore_https_errors: bool = False
     java_script_enabled: bool = True
-    proxy_config: Optional[ProxyConfig] = None
+    # proxy_config: Optional[ProxyConfig] = None
 
 @dataclass 
 class BrowserOverrideConfig:
