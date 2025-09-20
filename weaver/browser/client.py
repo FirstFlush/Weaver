@@ -63,16 +63,16 @@ class BrowserClient:
             
         return context_options            
 
-
     async def new_context(
             self, 
-            config: ContextConfig | None = None, 
+            config: ContextConfig | None = None,
+            proxy_endpoint: str | None = None
     ) -> BrowserContext:
         """Create a new browser context and track it."""
         if config is None:
             config = ContextConfig(user_agent=create_ua())
 
-        context_options = self._build_context_options(config)
+        context_options = self._build_context_options(config, proxy_endpoint)
 
         logger.debug("Creating new browser context")
         context = await self.browser.new_context(**context_options)
@@ -80,9 +80,6 @@ class BrowserClient:
         self._open_contexts.append(context)
 
         return context
-
-
-
 
     async def new_page(self, context: BrowserContext, config: BrowserOverrideConfig | None = None) -> Page:
         """
@@ -93,7 +90,6 @@ class BrowserClient:
         service = self._override_service_cls(page=page, config=config)
         await service.inject_overrides()
         return page
-        
         
     async def close(self) -> None:
         """Close all contexts, browser, and Playwright."""
