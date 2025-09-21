@@ -1,12 +1,11 @@
 import logging
 from typing import Any, List, Type
-from playwright.async_api import async_playwright, Playwright, Browser, BrowserContext, Page, ProxySettings
+from playwright.async_api import async_playwright, Playwright, Browser, BrowserContext, Page
 from .dataclasses import BrowserConfig, ContextConfig, BrowserOverrideConfig
 from .exc import BrowserClientError
 from .override import BrowserOverrideService
 from ..common.utils import create_ua
 from ..proxy.manager import ProxyManager
-from ..proxy.dataclasses import ProxyPool
 
 
 logger = logging.getLogger(__name__)
@@ -76,7 +75,7 @@ class BrowserClient:
 
         logger.debug("Creating new browser context")
         context = await self.browser.new_context(**context_options)
-        
+
         self._open_contexts.append(context)
 
         return context
