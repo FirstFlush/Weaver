@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 import random
-from typing import Any, Dict, Optional
+from typing import Any
 from .constants import VIEWPORTS
-from ..proxy.dataclasses import ProxyConfig
 
 
 @dataclass
@@ -10,7 +9,7 @@ class BrowserConfig:
     """Configuration for browser launch."""
     browser_type: str = 'chromium'  # chromium, firefox, webkit
     headless: bool = True
-    launch_options: Dict[str, Any] = field(default_factory=dict) # additional kwargs to be passed into playwright's Browser.launch()
+    launch_options: dict[str, Any] = field(default_factory=dict) # additional kwargs to be passed into playwright's Browser.launch()
     # proxy_config: Optional[ProxyConfig] = None
 
 
