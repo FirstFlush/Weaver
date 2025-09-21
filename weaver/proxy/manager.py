@@ -41,6 +41,14 @@ class ProxyManager:
         logger.error(msg, exc_info=True)
         raise ProxyError(msg)
 
+    def curl_cffi_string(self, proxy_endpoint: str) -> str:
+        proxy_endpoint = proxy_endpoint.replace("https://", "").replace("http://", "")
+        if self.pool.username and self.pool.password:
+            s = f"https://{self.pool.username}:{self.pool.password}@{proxy_endpoint}"
+        else:
+            s = f"https://{proxy_endpoint}" 
+        return s
+
     def playwright_proxy_credentials(self, proxy_endpoint: str) -> dict[str, str]:
         """Build dict of proxy crendentials in the format Playwright expects"""
         return {
