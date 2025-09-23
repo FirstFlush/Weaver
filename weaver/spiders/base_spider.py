@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 import asyncio
+from contextlib import asynccontextmanager
 import logging
 import random
-from ..http.client import HttpClient
-from ..http.dataclasses import HttpConfig
-from ..http.exc import HttpClientError
 from ..browser.client import BrowserClient
 from ..browser.dataclasses import BrowserConfig
 from ..browser.exc import BrowserClientError
+from ..http.client import HttpClient
+from ..http.dataclasses import HttpConfig
+from ..http.exc import HttpClientError
 from ..proxy.dataclasses import ProxyPool
 from ..proxy.exc import ProxyError
 from ..proxy.manager import ProxyManager
@@ -52,7 +53,45 @@ class BaseSpider(ABC):
             logger.error(msg)
             raise BaseSpiderError(msg)
 
-    async def __aenter__(self) -> "BaseSpider":
+    @asynccontextmanager
+    async def execute(self, **params):
+        """
+        Public method called by ScrapingService. Do not call this directly as it handles
+        the lifecycle of the spider. Put scraping logic in the run() method.
+        """
+        await self._setup()
+        try:
+            result = await self.run(**params)
+            yield result
+        finally:
+            await self._cleanup()
+
+    @abstractmethod
+    async def run(self, **kwargs):
+        """
+        Main entry point for the spider's scraping logic.
+
+        Subclasses must implement this method to define how the spider
+        interacts with the web, using the provided BrowserClient and/or
+        HttpClient. It runs within the async context of the spider, so
+        clients are guaranteed to be initialized and cleaned up properly.
+        """
+        pass
+
+    async def jitter(self, low: float = 0.2, high: float = 1.2):
+        await asyncio.sleep(random.uniform(low, high))
+
+
+    def _create_proxy_manager(self) -> ProxyManager:
+        if not self._proxy_pool:
+            msg = f"{self.__class__.__name__} can not create ProxyManager. ProxyPool not found`{type(self._proxy_pool)}`"
+            logger.error(msg, exc_info=True)
+            raise ProxyError(msg)
+        
+        return ProxyManager(proxy_pool=self._proxy_pool)
+
+
+    async def _setup(self):
         try:
             if self._browser_config is not None:
                 self.browser_client = await BrowserClient.create(self._browser_config)
@@ -69,9 +108,7 @@ class BaseSpider(ABC):
             logger.error(msg, exc_info=True)
             raise HttpClientError(msg)
         
-        return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def _cleanup(self):
         try:
             if self.browser_client:
                 await self.browser_client.close()
@@ -84,26 +121,40 @@ class BaseSpider(ABC):
         except Exception:
             logger.warning("HttpClient.close() raised an error but was suppressed")
 
-    @abstractmethod
-    async def run(self, **kwargs):
-        """
-        Main entry point for the spider's scraping logic.
-
-        Subclasses must implement this method to define how the spider
-        interacts with the web, using the provided BrowserClient and/or
-        HttpClient. It runs within the async context of the spider, so
-        clients are guaranteed to be initialized and cleaned up properly.
-        """
-        pass
-
-    async def jitter(self, low: float = 0.2, high: float = 1.0):
-        await asyncio.sleep(random.uniform(low, high))
 
 
-    def _create_proxy_manager(self) -> ProxyManager:
-        if not self._proxy_pool:
-            msg = f"{self.__class__.__name__} can not create ProxyManager. ProxyPool not found`{type(self._proxy_pool)}`"
-            logger.error(msg, exc_info=True)
-            raise ProxyError(msg)
+
+
+
+
+    # async def __aenter__(self) -> "BaseSpider":
+    #     try:
+    #         if self._browser_config is not None:
+    #             self.browser_client = await BrowserClient.create(self._browser_config)
+    #     except Exception as e:
+    #         msg = f"Failed to start BrowserClient due to unexpected error: {e}"
+    #         logger.error(msg, exc_info=True)
+    #         raise BrowserClientError(msg)
         
-        return ProxyManager(proxy_pool=self._proxy_pool)
+    #     try:
+    #         if self._http_config:
+    #             self.http_client = HttpClient(self._http_config)
+    #     except Exception as e:
+    #         msg = f"Failed to start HttpClient due to unexpected error: {e}"
+    #         logger.error(msg, exc_info=True)
+    #         raise HttpClientError(msg)
+        
+    #     return self
+    
+    # async def __aexit__(self, exc_type, exc_val, exc_tb):
+    #     try:
+    #         if self.browser_client:
+    #             await self.browser_client.close()
+    #     except Exception:
+    #         logger.warning("BrowserClient.close() raised an error but was suppressed") 
+       
+    #     try:
+    #         if self.http_client:
+    #             await self.http_client.close()
+    #     except Exception:
+    #         logger.warning("HttpClient.close() raised an error but was suppressed")
