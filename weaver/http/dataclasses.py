@@ -27,4 +27,3 @@ class RequestConfig:
     retry_delay: float = 1.0
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
     proxy_endpoint: Optional[str] = None
-    # proxy_config: Optional[ProxyConfig] = None  # Per-request ProxyConfig will override HttpConfig ProxyConfig
