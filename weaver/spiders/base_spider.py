@@ -3,6 +3,7 @@ import asyncio
 from contextlib import asynccontextmanager
 import logging
 import random
+from typing import Any, AsyncGenerator
 from ..browser.client import BrowserClient
 from ..browser.dataclasses import BrowserConfig
 from ..browser.exc import BrowserClientError
@@ -54,33 +55,40 @@ class BaseSpider(ABC):
             raise BaseSpiderError(msg)
 
     @asynccontextmanager
-    async def execute(self, **params):
+    async def execute(self, **params) -> AsyncGenerator[Any, None]:
         """
-        Public method called by ScrapingService. Do not call this directly as it handles
-        the lifecycle of the spider. Put scraping logic in the run() method.
+        Entry point used by orchestration or job-runner services to perform a
+        full scraping session. Handles resource lifecycle (setup / teardown)
+        for the spider’s HTTP and browser clients, then yields the async
+        generator returned by `run()`.
+
+        Usage:
+            async with spider.execute(**params) as results:
+                async for record in results:
+                    ...
+
+        This method should never contain scraping logic itself—only the
+        lifecycle control around `run()`.
         """
         await self._setup()
         try:
-            result = await self.run(**params)
-            yield result
+            yield self.run(**params)
         finally:
             await self._cleanup()
 
     @abstractmethod
-    async def run(self, **kwargs):
+    async def run(self, **kwargs) -> AsyncGenerator[Any, None]:
         """
-        Main entry point for the spider's scraping logic.
+        This is where you write the core scraping logic for a specific spider subclass.
 
-        Subclasses must implement this method to define how the spider
-        interacts with the web, using the provided BrowserClient and/or
-        HttpClient. It runs within the async context of the spider, so
-        clients are guaranteed to be initialized and cleaned up properly.
+        This coroutine should yield one record at a time as data is scraped.
+        It is called within the `execute()` context, which handles setup and
+        teardown of any resources the spider depends on.
         """
-        pass
+        raise NotImplementedError("Subclasses must override run() and yield an async generator object.")
 
     async def jitter(self, low: float = 0.2, high: float = 1.2):
         await asyncio.sleep(random.uniform(low, high))
-
 
     def _create_proxy_manager(self) -> ProxyManager:
         if not self._proxy_pool:
@@ -89,7 +97,6 @@ class BaseSpider(ABC):
             raise ProxyError(msg)
         
         return ProxyManager(proxy_pool=self._proxy_pool)
-
 
     async def _setup(self):
         try:
@@ -124,37 +131,3 @@ class BaseSpider(ABC):
 
 
 
-
-
-
-    # async def __aenter__(self) -> "BaseSpider":
-    #     try:
-    #         if self._browser_config is not None:
-    #             self.browser_client = await BrowserClient.create(self._browser_config)
-    #     except Exception as e:
-    #         msg = f"Failed to start BrowserClient due to unexpected error: {e}"
-    #         logger.error(msg, exc_info=True)
-    #         raise BrowserClientError(msg)
-        
-    #     try:
-    #         if self._http_config:
-    #             self.http_client = HttpClient(self._http_config)
-    #     except Exception as e:
-    #         msg = f"Failed to start HttpClient due to unexpected error: {e}"
-    #         logger.error(msg, exc_info=True)
-    #         raise HttpClientError(msg)
-        
-    #     return self
-    
-    # async def __aexit__(self, exc_type, exc_val, exc_tb):
-    #     try:
-    #         if self.browser_client:
-    #             await self.browser_client.close()
-    #     except Exception:
-    #         logger.warning("BrowserClient.close() raised an error but was suppressed") 
-       
-    #     try:
-    #         if self.http_client:
-    #             await self.http_client.close()
-    #     except Exception:
-    #         logger.warning("HttpClient.close() raised an error but was suppressed")
