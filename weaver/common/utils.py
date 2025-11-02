@@ -1,25 +1,35 @@
+import random
 import ua_generator
+
 
 def create_ua() -> str:
     return ua_generator.generate().text
 
 def generate_default_headers() -> dict[str, str]:
-    return {
-        'User-Agent': create_ua(),
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',  # Higher quality values
-        'Accept-Encoding': 'gzip, deflate, br, zstd',  # Add zstd
+    ua = create_ua()
+    lang = random.choice(['en-US,en;q=0.9', 'en-CA,en;q=0.8', 'en-GB,en;q=0.9'])
+    encodings = random.choice([
+        'gzip, deflate, br',
+        'gzip, br, zstd',
+        'gzip, deflate',
+    ])
+    base = {
+        'User-Agent': ua,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': lang,
+        'Accept-Encoding': encodings,
         'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
         'Sec-Fetch-Mode': 'navigate',
         'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-Dest': 'document',
         'Sec-Fetch-User': '?1',
-        'Cache-Control': 'max-age=0',
-        'sec-ch-ua': '"Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"'
     }
+    if random.random() < 0.7:
+        base['Upgrade-Insecure-Requests'] = '1'
+    if random.random() < 0.5:
+        base['Cache-Control'] = 'max-age=0'
+    return base
+
     
 def get_impersonation_profile(user_agent: str) -> str:
     # TODO check if this is better here or in http client
