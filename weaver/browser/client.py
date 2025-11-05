@@ -105,7 +105,10 @@ class BrowserClient:
             await self.playwright.stop()
             
         except Exception as e:
-            logger.error(f"Error during browser cleanup: {e}")
+            msg = f"Unexpected error during browser cleanup: {e}"
+            logger.error(msg, exc_info=True)
+            raise BrowserClientError(msg) from e
+
 
     @staticmethod
     async def _start_playwright() -> Playwright:

@@ -1,5 +1,5 @@
-from .spiders.base_spider import BaseSpider
-from .spiders.exc import BaseSpiderError
+from .spider.base_spider import BaseSpider
+from .spider.exc import SpiderError
 
 from .browser.client import BrowserClient
 from .browser.dataclasses import BrowserConfig
@@ -9,9 +9,11 @@ from .http.client import HttpClient
 from .http.dataclasses import HttpConfig, RequestConfig
 from .http.exc import HttpClientError
 
+from .common.exc import WeaverError
+
 __all__ = [
     'BaseSpider',
-    'BaseSpiderError',
+    'SpiderError',
     'BrowserClient', 
     'BrowserConfig',
     'BrowserClientError',
@@ -19,4 +21,5 @@ __all__ = [
     'HttpConfig', 
     'HttpClientError',
     'RequestConfig',
+    'WeaverError',
 ]
