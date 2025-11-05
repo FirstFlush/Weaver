@@ -4,6 +4,8 @@ from .exc import ProxyError
 from .dataclasses import ProxyPool
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
 
 class ProxyManager:
 

@@ -7,8 +7,8 @@ from .override import BrowserOverrideService
 from ..common.utils import create_ua
 from ..proxy.manager import ProxyManager
 
-
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class BrowserClient:

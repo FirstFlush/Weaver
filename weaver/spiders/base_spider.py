@@ -8,12 +8,16 @@ from ..browser.client import BrowserClient
 from ..http.client import HttpClient
 from ..proxy.manager import ProxyManager
 from .exc import BaseSpiderError
+from .types import SpiderMode
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 
 class BaseSpider(ABC):
     
+    MODE: SpiderMode
+
     def __init__(
             self,
             browser_client: BrowserClient | None = None,
@@ -44,6 +48,11 @@ class BaseSpider(ABC):
             logger.error(msg)
             raise BaseSpiderError(msg)
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "MODE"):
+            raise TypeError(f"{cls.__name__} must define MODE: [ browser | http | hybrid ]")
+
     @asynccontextmanager
     async def execute(self, **params) -> AsyncGenerator[Any, None]:
         """
@@ -60,7 +69,6 @@ class BaseSpider(ABC):
         This method should never contain scraping logic itself—only the
         lifecycle control around `run()`.
         """
-        await self._setup()
         try:
             yield self.run(**params)
         finally:
@@ -79,9 +87,6 @@ class BaseSpider(ABC):
 
     async def jitter(self, low: float = 0.2, high: float = 1.2):
         await asyncio.sleep(random.uniform(low, high))
-
-    async def _setup(self):
-        pass
 
     async def _cleanup(self):
         try:
