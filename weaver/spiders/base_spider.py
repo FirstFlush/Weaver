@@ -5,13 +5,7 @@ import logging
 import random
 from typing import Any, AsyncGenerator
 from ..browser.client import BrowserClient
-from ..browser.dataclasses import BrowserConfig
-from ..browser.exc import BrowserClientError
 from ..http.client import HttpClient
-from ..http.dataclasses import HttpConfig
-from ..http.exc import HttpClientError
-from ..proxy.dataclasses import ProxyPool
-from ..proxy.exc import ProxyError
 from ..proxy.manager import ProxyManager
 from .exc import BaseSpiderError
 
@@ -22,9 +16,9 @@ class BaseSpider(ABC):
     
     def __init__(
             self,
-            browser_config: BrowserConfig | None = None,
-            http_config: HttpConfig | None = None,
-            proxy_pool: ProxyPool | None = None,
+            browser_client: BrowserClient | None = None,
+            http_client: HttpClient | None = None,
+            proxy_manager: ProxyManager | None = None,
     ):
         """
         Abstract base class for web scrapers providing unified access to
@@ -41,16 +35,12 @@ class BaseSpider(ABC):
             Must be used with an async context (`async with`) to ensure
             proper creation and cleanup of browser and HTTP resources.
         """
-        self._browser_config = browser_config
-        self._http_config = http_config
-        self._proxy_pool = proxy_pool
-        self._proxy_manager = self._create_proxy_manager() if self._proxy_pool else None
+        self.browser_client = browser_client
+        self.http_client = http_client
+        self.proxy_manager = proxy_manager
 
-        self.browser_client: BrowserClient | None = None
-        self.http_client: HttpClient | None = None
-        
-        if not self._browser_config and not self._http_config:
-            msg = f"{self.__class__.__name__} did not receive either BrowserConfig or HttpConfig. At least 1 is required."
+        if not self.browser_client and not self.http_client:
+            msg = f"{self.__class__.__name__} did not receive either BrowserClient or HttpClient. At least 1 is required."
             logger.error(msg)
             raise BaseSpiderError(msg)
 
@@ -90,31 +80,9 @@ class BaseSpider(ABC):
     async def jitter(self, low: float = 0.2, high: float = 1.2):
         await asyncio.sleep(random.uniform(low, high))
 
-    def _create_proxy_manager(self) -> ProxyManager:
-        if not self._proxy_pool:
-            msg = f"{self.__class__.__name__} can not create ProxyManager. ProxyPool not found`{type(self._proxy_pool)}`"
-            logger.error(msg, exc_info=True)
-            raise ProxyError(msg)
-        
-        return ProxyManager(proxy_pool=self._proxy_pool)
-
     async def _setup(self):
-        try:
-            if self._browser_config is not None:
-                self.browser_client = await BrowserClient.create(self._browser_config)
-        except Exception as e:
-            msg = f"Failed to start BrowserClient due to unexpected error: {e}"
-            logger.error(msg, exc_info=True)
-            raise BrowserClientError(msg)
-        
-        try:
-            if self._http_config:
-                self.http_client = HttpClient(self._http_config)
-        except Exception as e:
-            msg = f"Failed to start HttpClient due to unexpected error: {e}"
-            logger.error(msg, exc_info=True)
-            raise HttpClientError(msg)
-        
+        pass
+
     async def _cleanup(self):
         try:
             if self.browser_client:
@@ -127,7 +95,3 @@ class BaseSpider(ABC):
                 await self.http_client.close()
         except Exception:
             logger.warning("HttpClient.close() raised an error but was suppressed")
-
-
-
-
